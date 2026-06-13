@@ -1,25 +1,53 @@
-import { Worker } from "bullmq";
-import { redis } from "../shared/redis.js";
-import searchGrants from "./jobs/searchGrants.js";
-import analyzeRfp from "./jobs/analyzeRfp.js";
-import generateDraft from "./jobs/generateDraft.js";
-import dueDiligence from "./jobs/dueDiligence.js";
+import pkg from "bullmq";
+const { Worker, QueueScheduler } = pkg;
 
-const processor = async (job) => {
-  switch (job.name) {
-    case "search_grants":
-      return await searchGrants(job.data);
-    case "analyze_rfp":
-      return await analyzeRfp(job.data);
-    case "generate_draft":
-      return await generateDraft(job.data);
-    case "due_diligence":
-      return await dueDiligence(job.data);
-    default:
-      throw new Error("Unknown job type");
-  }
-};
+import IORedis from "ioredis";
 
-new Worker("grant-jobs", processor, { connection: redis });
+const connection = new IORedis(process.env.REDIS_URL);
 
-console.log("Worker running...");
+// Ensures jobs are processed even if worker restarts
+new QueueScheduler("grantQueue", { connection });
+
+console.log("Worker started. Listening for grantSearch jobs...");
+
+const worker = new Worker(
+  "grantQueue",
+  async (job) => {
+    console.log("Processing job:", job.id);
+
+    if (job.name === "grantSearch") {
+      const { keywords, location, category } = job.data;
+
+      // Simulated grant search logic
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const results = [
+        {
+          title: "Community Impact Grant",
+          amount: "$10,000",
+          deadline: "2025-12-01",
+          match: `${keywords} - ${location}`,
+        },
+        {
+          title: "Innovation Support Fund",
+          amount: "$25,000",
+          deadline: "2025-11-15",
+          match: `${keywords} - ${category}`,
+        },
+      ];
+
+      return { results };
+    }
+
+    return { message: "Unknown job type" };
+  },
+  { connection }
+);
+
+worker.on("completed", (job) => {
+  console.log(`Job ${job.id} completed`);
+});
+
+worker.on("failed", (job, err) => {
+  console.error(`Job ${job.id} failed:`, err);
+});

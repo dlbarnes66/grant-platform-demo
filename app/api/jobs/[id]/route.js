@@ -1,4 +1,4 @@
-import { jobQueue } from "@/worker/queue";
+import { jobQueue } from "../../../../worker/queue.js";
 
 export async function GET(req, { params }) {
   const job = await jobQueue.getJob(params.id);

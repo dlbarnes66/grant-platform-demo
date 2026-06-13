@@ -1,14 +1,40 @@
-import { jobQueue } from "@/worker/queue";
+import { Queue } from "bullmq";
+import IORedis from "ioredis";
 
-export async function GET(req, { params }) {
-  const job = await jobQueue.getJob(params.id);
-  if (!job) return Response.json({ error: "Job not found" });
+const connection = new IORedis(process.env.REDIS_URL);
 
-  const state = await job.getState();
-  const result = await job.returnvalue;
+const grantQueue = new Queue("grantQueue", { connection });
 
-  return Response.json({
-    status: state,
-    result: result || null
-  });
+export async function POST(req) {
+  try {
+    const body = await req.json();
+
+    const { keywords, location, category } = body;
+
+    if (!keywords) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: keywords" }),
+        { status: 400 }
+      );
+    }
+
+    // Create job
+    const job = await grantQueue.add("grantSearch", {
+      keywords,
+      location,
+      category,
+      createdAt: Date.now(),
+    });
+
+    return new Response(
+      JSON.stringify({ jobId: job.id, status: "queued" }),
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("Job creation error:", err);
+    return new Response(
+      JSON.stringify({ error: "Failed to create job" }),
+      { status: 500 }
+    );
+  }
 }
