@@ -1,38 +1,40 @@
 import "./globals.css";
+import Link from "next/link";
+import { UserButton } from "@clerk/nextjs";
+import { Providers } from "./providers";
 
 export const metadata = {
-  title: "Grant Platform",
-  description: "Automated grant search and application system",
+  title: "Grant Engine",
+  description: "AI-powered grant search and indexing",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-100 flex">
-        {/* Sidebar */}
-        <aside className="hidden md:block w-64 bg-white shadow-lg p-6">
-          <h1 className="text-2xl font-bold mb-8">Grant Platform</h1>
+      <body className="bg-gray-50 text-gray-900">
+        <Providers>
+          <nav className="bg-white shadow px-6 py-4 flex items-center justify-between">
+            <h1 className="text-xl font-bold">
+              <Link href="/">Grant Engine</Link>
+            </h1>
 
-          <nav className="space-y-4">
-            <a href="/" className="block text-lg hover:text-blue-600">
-              Home
-            </a>
-            <a href="/search" className="block text-lg hover:text-blue-600">
-              Search Grants
-            </a>
-            <a href="/jobs" className="block text-lg hover:text-blue-600">
-              Job Status
-            </a>
-            <a href="/submit" className="block text-lg hover:text-blue-600">
-              Submit Application
-            </a>
+            <div className="flex gap-6 text-sm font-medium items-center">
+              <Link href="/jobs" className="hover:text-blue-600">
+                Jobs
+              </Link>
+              <Link href="/search" className="hover:text-blue-600">
+                AI Search
+              </Link>
+              <Link href="/index" className="hover:text-blue-600">
+                Index URL
+              </Link>
+
+              <UserButton afterSignOutUrl="/sign-in" />
+            </div>
           </nav>
-        </aside>
 
-        {/* Main content */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+          <main className="max-w-4xl mx-auto py-8">{children}</main>
+        </Providers>
       </body>
     </html>
   );

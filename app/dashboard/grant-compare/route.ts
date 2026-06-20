@@ -1,0 +1,23 @@
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+// POST /api/grant-compare
+export async function POST(req: Request) {
+  const { userId } = auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { grantIds } = await req.json();
+  if (!grantIds || !Array.isArray(grantIds) || grantIds.length < 2) {
+    return NextResponse.json({ error: "Need at least 2 grants" }, { status: 400 });
+  }
+
+  const comparison = await prisma.grantComparison.create({
+    data: {
+      userId,
+      grantIds,
+    },
+  });
+
+  return NextResponse.json(comparison);
+}

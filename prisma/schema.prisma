@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// =========================
+// AUTH MODELS (NextAuth)
+// =========================
+//
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String?         @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+
+  accounts      Account[]
+  sessions      Session[]
+  jobs          Job[]           @relation("UserJobs")
+  searchHistory SearchHistory[]
+  savedSearches SavedSearch[]
+  savedGrants   SavedGrant[]
+  comparisons   GrantComparison[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+//
+// =========================
+// SEARCH HISTORY MODEL
+// =========================
+//
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  query     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//
+// =========================
+// SAVED SEARCHES MODEL
+// =========================
+//
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  query     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//
+// =========================
+// JOB SYSTEM MODELS
+// =========================
+//
+
+model Job {
+  id        String     @id @default(cuid())
+  text      String
+  status    String     @default("queued")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  logs      JobLog[]
+  result    JobResult?
+
+  userId    String?
+  user      User?      @relation("UserJobs", fields: [userId], references: [id])
+}
+
+model JobLog {
+  id        String   @id @default(cuid())
+  jobId     String
+  message   String
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+}
+
+model JobResult {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  result    Json
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+}
+
+//
+// =========================
+// GRANT + EMBEDDING MODELS
+// =========================
+//
+
+model GrantPage {
+  id        String      @id @default(cuid())
+  url       String      @unique
+  title     String?
+  content   String?
+  createdAt DateTime    @default(now())
+
+  embeddings Embedding[]
+}
+
+model Embedding {
+  id        String   @id @default(cuid())
+  pageId    String
+  vector    Float[]
+  createdAt DateTime @default(now())
+
+  page GrantPage @relation(fields: [pageId], references: [id])
+}
+
+//
+// =========================
+// GRANT PREVIEW MODEL
+// =========================
+//
+
+model GrantPreview {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String
+  amount    String?
+  deadline  String?
+  category  String?
+  url       String?
+  score     Float?
+  content   String?
+  createdAt DateTime @default(now())
+
+  savedBy   SavedGrant[]
+}
+
+//
+// =========================
+// SAVED GRANTS MODEL
+// =========================
+//
+
+model SavedGrant {
+  id        String        @id @default(cuid())
+  userId    String
+  grantId   String
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [id])
+  grant     GrantPreview  @relation(fields: [grantId], references: [id])
+}
+
+//
+// =========================
+// GRANT COMPARISON MODEL
+// =========================
+//
+
+model GrantComparison {
+  id        String   @id @default(cuid())
+  userId    String
+  grantIds  String[]
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
