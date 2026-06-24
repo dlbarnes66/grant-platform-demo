@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 // Returns all saved searches for the user
 // ===============================
 export async function GET() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,7 +25,7 @@ export async function GET() {
 // Saves a new search
 // ===============================
 export async function POST(req: Request) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic({
@@ -16,7 +16,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Load grant
   const grant = await prisma.grantPreview.findUnique({
     where: { id: grantId },
   });
@@ -25,7 +24,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Grant not found" }, { status: 404 });
   }
 
-  // Load user profile
   const profile = await prisma.userProfile.findUnique({
     where: { userId },
   });
@@ -37,7 +35,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Claude Scoring Prompt
   const prompt = `
 You are an elite grant evaluation engine.
 
@@ -82,9 +79,19 @@ ${JSON.stringify(grant, null, 2)}
     ],
   });
 
-  const json = JSON.parse(response.content[0].text);
+  // ⭐ Find the text block returned by Claude
+const textBlock = response.content.find(
+  (block: any) => block.type === "text"
+);
 
-  // Save scoring results
+if (!textBlock) {
+  throw new Error("Claude returned no text content");
+}
+
+// ⭐ Cast to any so TypeScript stops complaining
+const json = JSON.parse((textBlock as any).text);
+
+
   const updated = await prisma.grantPreview.update({
     where: { id: grantId },
     data: {

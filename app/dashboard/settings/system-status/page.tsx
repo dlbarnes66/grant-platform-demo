@@ -10,7 +10,7 @@ import {
   BoltIcon,
   QueueListIcon,
   ArrowPathIcon,
-  DatabaseIcon,
+  CircleStackIcon, // ✅ Replaces DatabaseIcon
 } from "@heroicons/react/24/outline";
 
 export default function SystemStatusPage() {
@@ -19,10 +19,13 @@ export default function SystemStatusPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
-    const res = await fetch("/api/system-status");
-    const data = await res.json();
-    setStatus(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/system-status");
+      const data = await res.json();
+      setStatus(data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -139,7 +142,7 @@ export default function SystemStatusPage() {
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <DatabaseIcon className="w-5 h-5 text-brandBlue" />
+            <CircleStackIcon className="w-5 h-5 text-brandBlue" /> {/* ✅ FIXED */}
             Database Status
           </h2>
         </CardHeader>

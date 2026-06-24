@@ -4,12 +4,12 @@ import { connection } from "./redis";
 export const jobQueue = new Queue("jobs", {
   connection,
   defaultJobOptions: {
-    attempts: 5, // retry up to 5 times
+    attempts: 5,
     backoff: {
       type: "exponential",
-      delay: 3000, // 3 seconds, then 6, then 12, etc.
+      delay: 3000,
     },
-    removeOnComplete: true, // keep Redis clean
-    removeOnFail: false, // keep failed jobs for debugging
+    removeOnComplete: true,
+    removeOnFail: false,
   },
 });

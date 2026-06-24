@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 
 export async function PATCH(req: Request) {
   const session = await getServerSession();
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.email)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
 
@@ -15,9 +16,10 @@ export async function PATCH(req: Request) {
   const updated = await prisma.userProfile.upsert({
     where: { userId: user!.id },
     update: {
-      country: body.country,
-      state: body.state,
-      city: body.city,
+      organizationName: body.organizationName,
+      organizationType: body.organizationType,
+      mission: body.mission,
+      website: body.website,
     },
     create: {
       userId: user!.id,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
-export async function DELETE(_, { params }) {
+export async function DELETE(_req, { params }) {
   const { id } = params;
 
   try {
@@ -18,6 +18,9 @@ export async function DELETE(_, { params }) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Delete job error:", err);
-    return NextResponse.json({ error: "Failed to delete job" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete job" },
+      { status: 500 }
+    );
   }
 }

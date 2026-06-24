@@ -4,7 +4,7 @@ import { ClerkProvider, useAuth, useClerk } from "@clerk/nextjs";
 import { useEffect } from "react";
 
 function IdleLogoutWrapper({ children }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();   // ✅ FIXED
   const { signOut } = useClerk();
 
   useEffect(() => {
@@ -16,7 +16,7 @@ function IdleLogoutWrapper({ children }) {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         signOut({ redirectUrl: "/sign-in" });
-      }, 4 * 60 * 60 * 1000);
+      }, 4 * 60 * 60 * 1000); // 4 hours
     };
 
     window.addEventListener("mousemove", resetTimer);
@@ -33,7 +33,7 @@ function IdleLogoutWrapper({ children }) {
       window.removeEventListener("click", resetTimer);
       window.removeEventListener("scroll", resetTimer);
     };
-  }, [isSignedIn]);
+  }, [isSignedIn, signOut]);
 
   return <>{children}</>;
 }
