@@ -2,132 +2,149 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
-export default function JobDetailsPage() {
-  const params = useParams();
-  const jobId = params.id as string;
-
+export default function DashboardJobDetails() {
+  const { id } = useParams();
   const [job, setJob] = useState<any>(null);
-  const [logs, setLogs] = useState<any[]>([]);
-  const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadJob() {
-    const res = await fetch(`/api/jobs/${jobId}`);
-    const data = await res.json();
-
-    setJob(data.job || null);
-    setLogs(data.logs || []);
-    setResult(data.result || null);
-    setLoading(false);
-  }
-
-  async function retryJob() {
-    await fetch(`/api/jobs/${jobId}/rerun`, { method: "POST" });
-    loadJob();
-  }
-
-  async function duplicateJob() {
-    await fetch(`/api/jobs/${jobId}/duplicate`, { method: "POST" });
-  }
-
   useEffect(() => {
-    loadJob();
-    const interval = setInterval(loadJob, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    const loadJob = async () => {
+      const res = await fetch(`/api/jobs/${id}`);
+      const data = await res.json();
+      setJob(data);
+      setLoading(false);
+    };
 
-  if (loading || !job) {
+    loadJob();
+  }, [id]);
+
+  if (loading) {
     return (
-      <div className="text-brandBlue font-medium">
+      <div className="text-center text-muted text-lg py-20">
         Loading job details…
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="text-center text-red-600 text-lg py-20">
+        Job not found.
       </div>
     );
   }
 
   return (
     <div className="space-y-10">
+
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-brandBlue">Job Details</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Job Details</h1>
+        <p className="text-muted mt-2">
+          Track the status and output of this AI‑powered task.
+        </p>
+      </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={retryJob}
-            className="px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-brandGold hover:text-black transition"
-          >
-            Retry
-          </button>
+      {/* Job Metadata */}
+      <div className="card">
+        <h2 className="section-title">Job Information</h2>
 
-          <button
-            onClick={duplicateJob}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-brandGold hover:text-black transition"
-          >
-            Duplicate
-          </button>
+        <div className="mt-4 space-y-2 text-gray-700">
+          <p>
+            <span className="font-semibold">Type:</span>{" "}
+            {job.type || "N/A"}
+          </p>
+
+          <p>
+            <span className="font-semibold">Status:</span>{" "}
+            <span
+              className={
+                job.status === "completed"
+                  ? "text-green-600"
+                  : job.status === "failed"
+                  ? "text-red-600"
+                  : "text-blue-600"
+              }
+            >
+              {job.status}
+            </span>
+          </p>
+
+          <p>
+            <span className="font-semibold">Created:</span>{" "}
+            {new Date(job.createdAt).toLocaleString()}
+          </p>
+
+          {job.updatedAt && (
+            <p>
+              <span className="font-semibold">Updated:</span>{" "}
+              {new Date(job.updatedAt).toLocaleString()}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Job Info */}
-      <div className="p-6 bg-white border rounded-lg shadow-sm">
-        <h2 className="text-xl font-semibold text-brandBlue mb-2">Job Text</h2>
-        <p className="text-gray-700 whitespace-pre-wrap">{job.text}</p>
+      {/* Job Output */}
+      <div className="card">
+        <h2 className="section-title">Output</h2>
 
-        <div className="mt-4">
-          <span
-            className={`px-3 py-1 rounded text-white ${
-              job.status === "queued"
-                ? "bg-gray-500"
-                : job.status === "processing"
-                ? "bg-yellow-500"
-                : job.status === "completed"
-                ? "bg-green-600"
-                : job.status === "failed"
-                ? "bg-red-600"
-                : "bg-gray-400"
-            }`}
-          >
-            {job.status}
-          </span>
-        </div>
+        {!job.output && (
+          <p className="text-muted mt-2">
+            No output available yet.
+          </p>
+        )}
+
+        {job.output && (
+          <textarea
+            className="textarea mt-4 w-full h-96"
+            value={job.output}
+            readOnly
+          />
+        )}
       </div>
 
       {/* Logs */}
-      <div className="p-6 bg-white border rounded-lg shadow-sm">
-        <h2 className="text-xl font-semibold text-brandBlue mb-4">Logs</h2>
+      <div className="card">
+        <h2 className="section-title">Logs</h2>
 
-        {logs.length === 0 && (
-          <p className="text-gray-500">No logs yet.</p>
-        )}
-
-        <div className="space-y-2">
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className="p-3 border rounded bg-brandLight text-gray-800"
-            >
-              <div className="text-sm text-gray-600">
-                {new Date(log.createdAt).toLocaleString()}
-              </div>
-              <div>{log.message}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Result */}
-      <div className="p-6 bg-white border rounded-lg shadow-sm">
-        <h2 className="text-xl font-semibold text-brandBlue mb-4">Result</h2>
-
-        {!result && (
-          <p className="text-gray-500">No result yet.</p>
-        )}
-
-        {result && (
-          <pre className="whitespace-pre-wrap bg-brandLight p-4 rounded border text-gray-800">
-            {JSON.stringify(result.result, null, 2)}
+        {!job.logs || job.logs.length === 0 ? (
+          <p className="text-muted mt-2">No logs available.</p>
+        ) : (
+          <pre className="mt-4 bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto text-sm leading-relaxed">
+            {job.logs.join("\n")}
           </pre>
         )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-4">
+        {job.status === "failed" && (
+          <button
+            onClick={async () => {
+              await fetch(`/api/jobs/${id}/retry`, { method: "POST" });
+              location.reload();
+            }}
+            className="btn btn-secondary"
+          >
+            Retry Job
+          </button>
+        )}
+
+        <button
+          onClick={async () => {
+            await fetch(`/api/jobs/${id}/delete`, { method: "POST" });
+            window.location.href = "/dashboard/jobs";
+          }}
+          className="btn btn-danger"
+        >
+          Delete Job
+        </button>
+
+        <Link href="/dashboard/jobs" className="btn btn-primary">
+          Back to Jobs
+        </Link>
       </div>
     </div>
   );

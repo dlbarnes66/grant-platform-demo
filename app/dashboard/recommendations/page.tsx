@@ -1,62 +1,116 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Card from "@/components/ui/Card";
-import GrantCard from "@/components/GrantCard";
-import Button from "@/components/ui/Button";
+import Link from "next/link";
 
-export default function RecommendationsPage() {
-  const [grants, setGrants] = useState<any[]>([]);
+export default function DashboardRecommendationsPage() {
+  const [recs, setRecs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
+    const loadRecs = async () => {
       const res = await fetch("/api/recommendations");
       const data = await res.json();
-      setGrants(data);
+      setRecs(data || []);
       setLoading(false);
-    }
-    load();
+    };
+
+    loadRecs();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="text-center text-muted text-lg py-20">
+        Loading recommendations…
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-brandBlue">Recommended Grants</h1>
+    <div className="space-y-10">
 
-      {loading && (
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading recommendations…</p>
-        </Card>
-      )}
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Recommended Grants</h1>
+        <p className="text-muted mt-2">
+          AI‑curated grants based on your searches, saved items, and activity.
+        </p>
+      </div>
 
-      {!loading && grants.length === 0 && (
-        <Card className="text-center py-10">
-          <p className="text-gray-500">
-            No recommendations yet. Run searches and save grants to improve
-            recommendations.
+      {/* Empty State */}
+      {recs.length === 0 && (
+        <div className="card text-center py-12">
+          <p className="text-muted text-lg">
+            No recommendations available yet. Try searching or saving grants.
           </p>
-        </Card>
+          <Link href="/dashboard/search" className="btn btn-primary mt-6">
+            Search Grants
+          </Link>
+        </div>
       )}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {grants.map((g) => (
-          <GrantCard
-            key={g.id}
-            id={g.id}
-            title={g.title}
-            summary={g.summary}
-            amount={g.amount}
-            deadline={g.deadline}
-            category={g.category}
-            onSave={() => console.log("save", g.id)}
-            onCompare={() => console.log("compare", g.id)}
-          />
+      {/* Recommendations List */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {recs.map((grant) => (
+          <div key={grant.id} className="card hover-card">
+
+            {/* Title */}
+            <h2 className="text-lg font-semibold text-gray-900 leading-tight">
+              {grant.title}
+            </h2>
+
+            {/* Agency */}
+            {grant.agency && (
+              <p className="text-muted mt-1">{grant.agency}</p>
+            )}
+
+            {/* Metadata */}
+            <div className="mt-4 space-y-1 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold">Amount:</span>{" "}
+                {grant.amount || "N/A"}
+              </p>
+              <p>
+                <span className="font-semibold">Deadline:</span>{" "}
+                {grant.deadline || "N/A"}
+              </p>
+              <p>
+                <span className="font-semibold">Category:</span>{" "}
+                {grant.category || "N/A"}
+              </p>
+            </div>
+
+            {/* Summary */}
+            <p className="mt-4 text-gray-700 text-sm leading-relaxed line-clamp-4">
+              {grant.summary || "No summary available."}
+            </p>
+
+            {/* Buttons */}
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={`/dashboard/grants/${grant.id}`}
+                className="btn btn-success w-full text-center"
+              >
+                View Details
+              </Link>
+
+              <Link
+                href={`/dashboard/grants/${grant.id}/write`}
+                className="btn btn-primary w-full text-center"
+              >
+                Write with AI
+              </Link>
+            </div>
+          </div>
         ))}
       </div>
 
-      {!loading && grants.length > 0 && (
-        <Button variant="outline">Refresh Recommendations</Button>
-      )}
+      {/* Footer */}
+      <div className="mt-12">
+        <Link href="/dashboard" className="text-muted underline">
+          ← Back to Dashboard
+        </Link>
+      </div>
     </div>
   );
 }

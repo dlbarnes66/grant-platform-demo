@@ -1,95 +1,123 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Card, { CardHeader, CardFooter } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
-export default function SubmitApplicationPage({ params }: any) {
+export default function DashboardApplyPage() {
+  const { id } = useParams();
   const [grant, setGrant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    orgName: "",
-    contact: "",
-    summary: "",
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    async function load() {
-      const res = await fetch(`/api/grants/${params.id}`);
+    const loadGrant = async () => {
+      const res = await fetch(`/api/grants/${id}`);
       const data = await res.json();
       setGrant(data);
       setLoading(false);
-    }
-    load();
-  }, [params.id]);
+    };
 
-  async function submit() {
-    await fetch("/api/applications", {
+    loadGrant();
+  }, [id]);
+
+  const submitApplication = async () => {
+    setSubmitting(true);
+
+    await fetch("/api/apply", {
       method: "POST",
       body: JSON.stringify({
-        grantId: params.id,
-        ...form,
+        grantId: id,
+        notes,
       }),
     });
+
+    setSubmitting(false);
     alert("Application submitted!");
-  }
+  };
 
   if (loading) {
     return (
-      <div className="p-6">
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading grant…</p>
-        </Card>
+      <div className="text-center text-muted text-lg py-20">
+        Loading application form…
+      </div>
+    );
+  }
+
+  if (!grant) {
+    return (
+      <div className="text-center text-red-600 text-lg py-20">
+        Grant not found.
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-brandBlue">
-        Apply for {grant.title}
-      </h1>
+    <div className="space-y-10">
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-800">
-            Application Form
-          </h2>
-        </CardHeader>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Apply to Grant</h1>
+        <p className="text-muted mt-2">
+          Submit your application or attach notes for internal tracking.
+        </p>
+      </div>
 
-        <div className="space-y-4">
-          <Input
-            label="Organization Name"
-            value={form.orgName}
-            onChange={(e) => setForm({ ...form, orgName: e.target.value })}
-          />
+      {/* Grant Summary */}
+      <div className="card">
+        <h2 className="section-title">Grant Overview</h2>
 
-          <Input
-            label="Contact Email"
-            value={form.contact}
-            onChange={(e) => setForm({ ...form, contact: e.target.value })}
-          />
+        <h3 className="text-xl font-semibold mt-4">{grant.title}</h3>
+        {grant.agency && (
+          <p className="text-muted mt-1">{grant.agency}</p>
+        )}
 
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Project Summary
-            </label>
-            <textarea
-              className="w-full mt-1 p-3 border rounded-lg focus:ring-brandBlue/40 focus:border-brandBlue"
-              rows={6}
-              value={form.summary}
-              onChange={(e) => setForm({ ...form, summary: e.target.value })}
-            />
-          </div>
+        <div className="mt-4 space-y-2 text-gray-700">
+          <p>
+            <span className="font-semibold">Amount:</span>{" "}
+            {grant.amount || "N/A"}
+          </p>
+          <p>
+            <span className="font-semibold">Deadline:</span>{" "}
+            {grant.deadline || "N/A"}
+          </p>
         </div>
+      </div>
 
-        <CardFooter className="mt-6">
-          <Button fullWidth onClick={submit}>
-            Submit Application
-          </Button>
-        </CardFooter>
-      </Card>
+      {/* Notes / Application */}
+      <div className="card">
+        <h2 className="section-title">Application Notes</h2>
+        <p className="text-muted mt-2">
+          Add internal notes, draft responses, or attach context for your team.
+        </p>
+
+        <textarea
+          className="textarea mt-4 w-full h-64"
+          placeholder="Write your notes here…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-4">
+        <button
+          onClick={submitApplication}
+          disabled={submitting}
+          className="btn btn-primary"
+        >
+          {submitting ? "Submitting…" : "Submit Application"}
+        </button>
+
+        <Link href={`/dashboard/grants/${id}`} className="btn btn-secondary">
+          Back to Grant
+        </Link>
+
+        <Link href="/dashboard" className="btn btn-success">
+          Dashboard Home
+        </Link>
+      </div>
     </div>
   );
 }

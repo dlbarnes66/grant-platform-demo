@@ -1,62 +1,28 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-// ⭐ SAVE A GRANT
 export async function POST(req: Request) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
-  const body = await req.json();
-  const {
-    grantId,
-    title,
-    summary,
-    amount,
-    deadline,
-    category,
-    agency,
-    url,
-  } = body;
+  const { grantId } = await req.json();
 
-  const saved = await prisma.savedGrant.create({
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) return new Response("Unauthorized", { status: 401 });
+
+  await prisma.savedGrant.create({
     data: {
-      userId,
+      userId: user.id,
       grantId,
-      title,
-      summary,
-      amount,
-      deadline,
-      category,
-      agency,
-      url,
+      title: "",
     },
   });
 
-  return NextResponse.json({ saved });
-}
-
-// ⭐ GET ALL SAVED GRANTS FOR USER
-export async function GET() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
-
-  const saved = await prisma.savedGrant.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json({ saved });
+  return new Response("OK");
 }

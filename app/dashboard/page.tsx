@@ -4,152 +4,147 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const [orgName, setOrgName] = useState("");
-  const [loadingMatches, setLoadingMatches] = useState(false);
-  const [matches, setMatches] = useState([]);
+  const [usage, setUsage] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
-  // Load profile basics
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const res = await fetch("/api/profile");
-        const data = await res.json();
-        setOrgName(data?.name || "Your Organization");
-      } catch (err) {
-        console.error("Failed to load profile", err);
-      }
-    };
+    async function load() {
+      const usageRes = await fetch("/api/billing/usage");
+      const profileRes = await fetch("/api/profile");
 
-    loadProfile();
+      setUsage(await usageRes.json());
+      setProfile(await profileRes.json());
+    }
+    load();
   }, []);
 
-  // Load AI grant matches
-  const loadMatches = async () => {
-    setLoadingMatches(true);
-
-    const res = await fetch("/api/match-grants", {
-      method: "POST",
-      body: JSON.stringify({ userId: "test-user-id" }), // Replace with real user ID later
-    });
-
-    const data = await res.json();
-    setMatches(data.grants || []);
-    setLoadingMatches(false);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-10">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-semibold text-gray-900">
-          Welcome, {orgName}
+      <div className="bg-gradient-to-r from-blue-900 to-yellow-500 text-white p-8 rounded-b-2xl shadow-lg">
+        <h1 className="text-3xl font-bold">
+          Welcome back{profile?.orgName ? `, ${profile.orgName}` : ""} 👋
         </h1>
-        <p className="text-gray-600 mt-2">
-          Your personalized grant dashboard is ready.
+        <p className="text-white/80 mt-2">
+          Here’s what’s happening across your grant workspace today.
         </p>
       </div>
 
-      {/* Main CTA */}
-      <div className="max-w-5xl mx-auto mt-10">
-        <Link
-          href="/search"
-          className="block w-full bg-white border border-yellow-400 text-yellow-600 text-center py-4 rounded-xl shadow hover:bg-yellow-50 transition text-lg font-medium"
-        >
-          Start Your First Grant Search
-        </Link>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="max-w-5xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link
-          href="/profile"
-          className="bg-white p-6 rounded-xl shadow border border-gray-200 hover:bg-gray-50 transition"
-        >
-          <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
-          <p className="text-gray-600 mt-1 text-sm">
-            Update your organization details
-          </p>
-        </Link>
-
-        <Link
-          href="/saved-searches"
-          className="bg-white p-6 rounded-xl shadow border border-gray-200 hover:bg-gray-50 transition"
-        >
-          <h3 className="text-lg font-semibold text-gray-900">Saved Searches</h3>
-          <p className="text-gray-600 mt-1 text-sm">
-            View your saved grant searches
-          </p>
-        </Link>
-
-        <Link
-          href="/saved-grants"
-          className="bg-white p-6 rounded-xl shadow border border-gray-200 hover:bg-gray-50 transition"
-        >
-          <h3 className="text-lg font-semibold text-gray-900">Saved Grants</h3>
-          <p className="text-gray-600 mt-1 text-sm">
-            Grants you’ve bookmarked
-          </p>
-        </Link>
-
-        <Link
-          href="/history"
-          className="bg-white p-6 rounded-xl shadow border border-gray-200 hover:bg-gray-50 transition"
-        >
-          <h3 className="text-lg font-semibold text-gray-900">Search History</h3>
-          <p className="text-gray-600 mt-1 text-sm">
-            Review your past activity
-          </p>
-        </Link>
-      </div>
-
-      {/* AI Grant Matching */}
-      <div className="max-w-5xl mx-auto mt-16">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          AI‑Powered Grant Recommendations
-        </h2>
-        <p className="text-gray-600 mt-1">
-          Based on your onboarding profile
-        </p>
-
-        <button
-          onClick={loadMatches}
-          disabled={loadingMatches}
-          className="mt-6 px-6 py-3 bg-brandBlue text-white rounded-lg shadow hover:bg-brandBlue/90 transition"
-        >
-          {loadingMatches ? "Loading Recommendations..." : "Generate Recommendations"}
-        </button>
-
-        {/* Results */}
-        <div className="mt-8 space-y-6">
-          {matches.map((g: any, i: number) => (
-            <div
-              key={i}
-              className="bg-white border border-gray-200 rounded-xl p-6 shadow"
+      <div className="max-w-6xl mx-auto p-6 space-y-10">
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Plan */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h2 className="text-lg font-semibold text-gray-800">Current Plan</h2>
+            <p className="text-2xl font-bold mt-2 text-blue-700">
+              {profile?.planName || "Starter"}
+            </p>
+            <p className="text-gray-500 mt-1">
+              Renews on {profile?.renewalDate || "—"}
+            </p>
+            <Link
+              href="/billing"
+              className="mt-4 inline-block text-blue-600 font-medium hover:underline"
             >
-              <h3 className="text-xl font-semibold text-gray-900">{g.name}</h3>
-              <p className="text-gray-600">{g.funder}</p>
+              Manage Billing →
+            </Link>
+          </div>
 
-              <p className="mt-2 text-sm text-gray-700">
-                <strong>Amount:</strong> {g.amountRange}  
-                <br />
-                <strong>Deadline:</strong> {g.deadline}
-              </p>
-
-              <p className="mt-3 text-gray-800">
-                <strong>Why it matches:</strong> {g.whyItMatches}
-              </p>
-
-              <p className="mt-2 text-sm text-gray-600">
-                <strong>Eligibility:</strong> {g.keyEligibilityPoints}
-              </p>
+          {/* AI Jobs */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h2 className="text-lg font-semibold text-gray-800">AI Jobs</h2>
+            <p className="text-2xl font-bold mt-2 text-blue-700">
+              {usage?.aiJobs.used ?? 0} / {usage?.aiJobs.limit ?? 0}
+            </p>
+            <div className="w-full bg-gray-200 h-2 rounded mt-3">
+              <div
+                className="bg-blue-600 h-2 rounded"
+                style={{
+                  width: `${
+                    ((usage?.aiJobs.used ?? 0) / (usage?.aiJobs.limit ?? 1)) *
+                    100
+                  }%`,
+                }}
+              />
             </div>
-          ))}
+          </div>
 
-          {matches.length === 0 && !loadingMatches && (
-            <div className="mt-6 bg-white border border-gray-200 rounded-xl p-6 shadow text-gray-500 text-center">
-              No recommendations yet. Click the button above to generate AI‑powered matches.
+          {/* Storage */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h2 className="text-lg font-semibold text-gray-800">Storage</h2>
+            <p className="text-2xl font-bold mt-2 text-blue-700">
+              {usage?.storage.used ?? 0}GB / {usage?.storage.limit ?? 0}GB
+            </p>
+            <div className="w-full bg-gray-200 h-2 rounded mt-3">
+              <div
+                className="bg-yellow-500 h-2 rounded"
+                style={{
+                  width: `${
+                    ((usage?.storage.used ?? 0) /
+                      (usage?.storage.limit ?? 1)) *
+                    100
+                  }%`,
+                }}
+              />
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Link
+              href="/search"
+              className="bg-white p-5 rounded-xl shadow-sm border hover:shadow-md transition"
+            >
+              <p className="font-semibold text-blue-700">🔍 Start Grant Search</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Find grants that match your organization.
+              </p>
+            </Link>
+
+            <Link
+              href="/assistant"
+              className="bg-white p-5 rounded-xl shadow-sm border hover:shadow-md transition"
+            >
+              <p className="font-semibold text-blue-700">🤖 AI Assistant</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Draft proposals or analyze grant fit.
+              </p>
+            </Link>
+
+            <Link
+              href="/saved"
+              className="bg-white p-5 rounded-xl shadow-sm border hover:shadow-md transition"
+            >
+              <p className="font-semibold text-blue-700">⭐ Saved Grants</p>
+              <p className="text-gray-500 text-sm mt-1">
+                View grants you’ve bookmarked.
+              </p>
+            </Link>
+
+            <Link
+              href="/billing"
+              className="bg-white p-5 rounded-xl shadow-sm border hover:shadow-md transition"
+            >
+              <p className="font-semibold text-blue-700">💳 Billing</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Manage your subscription and invoices.
+              </p>
+            </Link>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <p className="text-gray-500">No recent activity yet.</p>
+            <p className="text-gray-400 text-sm mt-1">
+              (This will populate automatically as you use the platform.)
+            </p>
+          </div>
         </div>
       </div>
     </div>

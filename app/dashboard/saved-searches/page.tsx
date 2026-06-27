@@ -1,69 +1,97 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import Link from "next/link";
 
-export default function SavedSearchesPage() {
-  const [saved, setSaved] = useState<any[]>([]);
+export default function DashboardSavedSearchesPage() {
+  const [searches, setSearches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
+    const loadSaved = async () => {
       const res = await fetch("/api/saved-searches");
       const data = await res.json();
-      setSaved(data);
+      setSearches(data || []);
       setLoading(false);
-    }
-    load();
+    };
+
+    loadSaved();
   }, []);
 
-  async function runSaved(id: string) {
-    await fetch(`/api/saved-searches/${id}/run`, { method: "POST" });
-    alert("Search started.");
-  }
-
-  async function removeSaved(id: string) {
-    await fetch(`/api/saved-searches/${id}`, { method: "DELETE" });
-    setSaved((prev) => prev.filter((s) => s.id !== id));
+  if (loading) {
+    return (
+      <div className="text-center text-muted text-lg py-20">
+        Loading saved searches…
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-brandBlue">Saved Searches</h1>
+    <div className="space-y-10">
 
-      {loading && (
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading saved searches…</p>
-        </Card>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Saved Searches</h1>
+        <p className="text-muted mt-2">
+          Quickly re-run your previous searches or manage saved queries.
+        </p>
+      </div>
+
+      {/* Empty State */}
+      {searches.length === 0 && (
+        <div className="card text-center py-12">
+          <p className="text-muted text-lg">You haven’t saved any searches yet.</p>
+          <Link href="/dashboard/search" className="btn btn-primary mt-6">
+            Search Grants
+          </Link>
+        </div>
       )}
 
-      {!loading && saved.length === 0 && (
-        <Card className="text-center py-10">
-          <p className="text-gray-500">No saved searches yet.</p>
-        </Card>
-      )}
+      {/* Saved Searches List */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {searches.map((search) => (
+          <div key={search.id} className="card hover-card">
 
-      <div className="space-y-3">
-        {saved.map((s) => (
-          <Card key={s.id} className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-800 font-medium">{s.name}</p>
-              <p className="text-gray-500 text-sm">{s.query}</p>
-            </div>
+            {/* Query */}
+            <h2 className="text-lg font-semibold text-gray-900 leading-tight">
+              {search.query}
+            </h2>
 
-            <div className="flex items-center gap-3">
-              <Badge variant="info">{s.frequency || "Manual"}</Badge>
-              <Button size="sm" variant="outline" onClick={() => runSaved(s.id)}>
-                Run
-              </Button>
-              <Button size="sm" variant="danger" onClick={() => removeSaved(s.id)}>
-                Delete
-              </Button>
+            {/* Timestamp */}
+            <p className="text-muted text-sm mt-1">
+              Saved on {new Date(search.createdAt).toLocaleDateString()}
+            </p>
+
+            {/* Buttons */}
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={`/dashboard/search?query=${encodeURIComponent(search.query)}`}
+                className="btn btn-success w-full text-center"
+              >
+                Run Search
+              </Link>
+
+              <button
+                onClick={async () => {
+                  await fetch(`/api/saved-searches/${search.id}`, {
+                    method: "DELETE",
+                  });
+                  setSearches((prev) => prev.filter((s) => s.id !== search.id));
+                }}
+                className="btn btn-danger w-full"
+              >
+                Remove
+              </button>
             </div>
-          </Card>
+          </div>
         ))}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12">
+        <Link href="/dashboard" className="text-muted underline">
+          ← Back to Dashboard
+        </Link>
       </div>
     </div>
   );

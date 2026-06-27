@@ -1,55 +1,119 @@
-import Card, { CardHeader, CardFooter } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+"use client";
 
-async function getGrant(id: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/grants/${id}`, {
-    cache: "no-store",
-  });
-  return res.json();
-}
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
-export default async function GrantDetailsPage({ params }: any) {
-  const grant = await getGrant(params.id);
+export default function DashboardGrantDetails() {
+  const { id } = useParams();
+  const [grant, setGrant] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadGrant = async () => {
+      const res = await fetch(`/api/grants/${id}`);
+      const data = await res.json();
+      setGrant(data);
+      setLoading(false);
+    };
+
+    loadGrant();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="text-center text-muted text-lg py-20">
+        Loading grant details…
+      </div>
+    );
+  }
+
+  if (!grant) {
+    return (
+      <div className="text-center text-red-600 text-lg py-20">
+        Grant not found.
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-brandBlue">{grant.title}</h1>
+    <div className="space-y-10">
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Grant Details</h2>
-            {grant.category && <Badge variant="info">{grant.category}</Badge>}
-          </div>
-        </CardHeader>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+          {grant.title}
+        </h1>
+        {grant.agency && (
+          <p className="text-muted mt-1">{grant.agency}</p>
+        )}
+      </div>
 
-        <div className="space-y-4 text-gray-700">
+      {/* Metadata */}
+      <div className="card">
+        <h2 className="section-title">Grant Details</h2>
+
+        <div className="mt-4 space-y-2 text-gray-700">
           <p>
-            <span className="font-semibold text-gray-800">Amount:</span>{" "}
-            {grant.amount || "—"}
+            <span className="font-semibold">Amount:</span>{" "}
+            {grant.amount || "N/A"}
           </p>
-
           <p>
-            <span className="font-semibold text-gray-800">Deadline:</span>{" "}
-            {grant.deadline || "—"}
+            <span className="font-semibold">Deadline:</span>{" "}
+            {grant.deadline || "N/A"}
           </p>
-
-          <p className="whitespace-pre-line">{grant.summary}</p>
-
-          {grant.description && (
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-1">Description</h3>
-              <p className="whitespace-pre-line">{grant.description}</p>
-            </div>
-          )}
+          <p>
+            <span className="font-semibold">Category:</span>{" "}
+            {grant.category || "N/A"}
+          </p>
+          <p>
+            <span className="font-semibold">Eligibility:</span>{" "}
+            {grant.eligibility || "N/A"}
+          </p>
         </div>
+      </div>
 
-        <CardFooter className="flex justify-between mt-6">
-          <Button variant="outline">Save</Button>
-          <Button variant="primary">Compare</Button>
-        </CardFooter>
-      </Card>
+      {/* Summary */}
+      <div className="card">
+        <h2 className="section-title">Summary</h2>
+        <p className="text-gray-700 leading-relaxed mt-2">
+          {grant.summary || "No summary available."}
+        </p>
+      </div>
+
+      {/* Description */}
+      {grant.description && (
+        <div className="card">
+          <h2 className="section-title">Full Description</h2>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-line mt-2">
+            {grant.description}
+          </p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-4">
+        <Link
+          href={`/dashboard/grants/${id}/write`}
+          className="btn btn-primary"
+        >
+          Write Proposal with AI
+        </Link>
+
+        <Link
+          href="/dashboard/compare"
+          className="btn btn-secondary"
+        >
+          Compare Grants
+        </Link>
+
+        <Link
+          href="/dashboard/search"
+          className="btn btn-success"
+        >
+          Back to Search
+        </Link>
+      </div>
     </div>
   );
 }

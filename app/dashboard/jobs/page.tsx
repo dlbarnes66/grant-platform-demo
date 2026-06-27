@@ -1,91 +1,123 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
 
-export default function JobsPage() {
+export default function DashboardJobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
+    const loadJobs = async () => {
       const res = await fetch("/api/jobs");
       const data = await res.json();
-      setJobs(data);
+      setJobs(data || []);
       setLoading(false);
-    }
-    load();
+    };
+
+    loadJobs();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="text-center text-muted text-lg py-20">
+        Loading jobs…
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-brandBlue">Jobs</h1>
+    <div className="space-y-10">
 
-      {loading && (
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading jobs…</p>
-        </Card>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">AI Jobs</h1>
+        <p className="text-muted mt-2">
+          Track the status of your AI‑powered tasks, writers, and analyzers.
+        </p>
+      </div>
+
+      {/* Empty State */}
+      {jobs.length === 0 && (
+        <div className="card text-center py-12">
+          <p className="text-muted text-lg">No jobs found.</p>
+          <Link href="/dashboard/search" className="btn btn-primary mt-6">
+            Start a Search
+          </Link>
+        </div>
       )}
 
-      {!loading && jobs.length === 0 && (
-        <Card className="text-center py-10">
-          <h2 className="text-lg font-semibold text-gray-700">
-            No jobs found
-          </h2>
-          <p className="text-gray-500 mt-2">
-            Jobs will appear here when you run searches or comparisons.
-          </p>
-        </Card>
-      )}
-
-      <div className="space-y-4">
+      {/* Jobs List */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {jobs.map((job) => (
-          <Card key={job.id} className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">
-                {job.type}
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Created: {new Date(job.createdAt).toLocaleString()}
-              </p>
-            </div>
+          <div key={job.id} className="card hover-card">
 
-            <div className="flex items-center gap-3">
-              <Badge
-                variant={
+            {/* Title */}
+            <h2 className="text-lg font-semibold text-gray-900 leading-tight">
+              {job.type || "Job"}
+            </h2>
+
+            {/* Status */}
+            <p className="text-sm mt-1">
+              <span className="font-semibold">Status:</span>{" "}
+              <span
+                className={
                   job.status === "completed"
-                    ? "success"
+                    ? "text-green-600"
                     : job.status === "failed"
-                    ? "danger"
-                    : "info"
+                    ? "text-red-600"
+                    : "text-blue-600"
                 }
               >
                 {job.status}
-              </Badge>
+              </span>
+            </p>
 
-              <Link href={`/dashboard/jobs/${job.id}`}>
-                <Button size="sm" variant="outline">
-                  View Logs
-                </Button>
+            {/* Timestamp */}
+            <p className="text-muted text-sm mt-1">
+              Created: {new Date(job.createdAt).toLocaleString()}
+            </p>
+
+            {/* Buttons */}
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={`/dashboard/jobs/${job.id}`}
+                className="btn btn-primary w-full text-center"
+              >
+                View Job
               </Link>
 
               {job.status === "failed" && (
-                <Button size="sm" variant="primary">
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/jobs/${job.id}/retry`, { method: "POST" });
+                    location.reload();
+                  }}
+                  className="btn btn-secondary w-full"
+                >
                   Retry
-                </Button>
+                </button>
               )}
 
-              {job.status === "running" && (
-                <Button size="sm" variant="danger">
-                  Cancel
-                </Button>
-              )}
+              <button
+                onClick={async () => {
+                  await fetch(`/api/jobs/${job.id}/delete`, { method: "POST" });
+                  setJobs((prev) => prev.filter((j) => j.id !== job.id));
+                }}
+                className="btn btn-danger w-full"
+              >
+                Delete
+              </button>
             </div>
-          </Card>
+          </div>
         ))}
+      </div>
+
+      {/* Back Link */}
+      <div className="mt-12">
+        <Link href="/dashboard" className="text-muted underline">
+          ← Back to Dashboard
+        </Link>
       </div>
     </div>
   );

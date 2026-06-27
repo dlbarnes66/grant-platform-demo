@@ -1,17 +1,21 @@
 import "./globals.css";
-import NavBar from "@/components/NavBar";
+import ToastProvider from "@/components/notifications/ToastProvider";
+import SystemMessageProvider from "@/components/notifications/SystemMessageProvider";
 
 export const metadata = {
   title: "GrantScout Pro",
-  description: "AI-powered grant discovery and writing platform",
+  description: "AI-powered grant automation platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-100">
-        <NavBar />
-        <main className="pt-6">{children}</main>
+      <body>
+        <SystemMessageProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </SystemMessageProvider>
       </body>
     </html>
   );

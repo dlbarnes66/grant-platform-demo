@@ -1,141 +1,181 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Card, { CardHeader, CardFooter } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
+import Link from "next/link";
 
 export default function NotificationSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [settings, setSettings] = useState({
-    emailAlerts: true,
-    jobCompleted: true,
-    newRecommendations: true,
-    savedSearchMatches: true,
+  const [prefs, setPrefs] = useState({
+    emailGrantMatches: true,
+    emailAutomations: true,
+    emailSystem: true,
+
+    inappGrantMatches: true,
+    inappAutomations: true,
+    inappAIJobs: true,
+    inappSystem: true,
   });
 
-  useEffect(() => {
-    async function load() {
-      const res = await fetch("/api/notification-settings");
-      const data = await res.json();
-      setSettings(data);
-      setLoading(false);
+  const load = async () => {
+    const res = await fetch("/api/settings/notifications");
+    const data = await res.json();
+    setPrefs(data);
+    setLoading(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+
+    const res = await fetch("/api/settings/notifications/update", {
+      method: "POST",
+      body: JSON.stringify(prefs),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (data.error) {
+      alert(data.error);
+      return;
     }
+
+    alert("Notification preferences updated!");
+  };
+
+  useEffect(() => {
     load();
   }, []);
 
-  async function save() {
-    setSaving(true);
-    await fetch("/api/notification-settings", {
-      method: "PUT",
-      body: JSON.stringify(settings),
-    });
-    setSaving(false);
-    alert("Notification settings updated!");
-  }
-
   if (loading) {
     return (
-      <div className="p-6">
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading notification settings…</p>
-        </Card>
+      <div className="text-center text-muted text-lg py-20">
+        Loading notification settings…
       </div>
     );
   }
 
-  function toggle(key: keyof typeof settings) {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  const toggle = (key: string) => {
+    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-brandBlue">Notification Settings</h1>
+    <div className="space-y-10">
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-800">
-            Email Notifications
-          </h2>
-        </CardHeader>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Notification Settings</h1>
+        <p className="text-muted mt-2">
+          Control how you receive alerts about grants, automations, and system activity.
+        </p>
+      </div>
 
-        <div className="space-y-6">
-          {/* Master Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-800">Enable All Email Alerts</p>
-              <p className="text-gray-500 text-sm">
-                Turn on or off all email notifications.
-              </p>
-            </div>
+      {/* Email Notifications */}
+      <div className="card">
+        <h2 className="section-title">Email Notifications</h2>
 
+        <div className="mt-6 space-y-4">
+
+          <label className="flex items-center gap-3">
             <input
               type="checkbox"
-              checked={settings.emailAlerts}
-              onChange={() => toggle("emailAlerts")}
-              className="w-5 h-5 accent-brandBlue"
+              checked={prefs.emailGrantMatches}
+              onChange={() => toggle("emailGrantMatches")}
+              className="w-5 h-5"
             />
-          </div>
+            <span className="text-gray-800">Grant Match Alerts</span>
+          </label>
 
-          {/* Job Completed */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-800">Job Completed Alerts</p>
-              <p className="text-gray-500 text-sm">
-                Receive an email when a search or comparison job finishes.
-              </p>
-            </div>
-
+          <label className="flex items-center gap-3">
             <input
               type="checkbox"
-              checked={settings.jobCompleted}
-              onChange={() => toggle("jobCompleted")}
-              className="w-5 h-5 accent-brandBlue"
+              checked={prefs.emailAutomations}
+              onChange={() => toggle("emailAutomations")}
+              className="w-5 h-5"
             />
-          </div>
+            <span className="text-gray-800">Automation Run Alerts</span>
+          </label>
 
-          {/* New Recommendations */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-800">New Recommendations</p>
-              <p className="text-gray-500 text-sm">
-                Get notified when new grants match your profile.
-              </p>
-            </div>
-
+          <label className="flex items-center gap-3">
             <input
               type="checkbox"
-              checked={settings.newRecommendations}
-              onChange={() => toggle("newRecommendations")}
-              className="w-5 h-5 accent-brandBlue"
+              checked={prefs.emailSystem}
+              onChange={() => toggle("emailSystem")}
+              className="w-5 h-5"
             />
-          </div>
-
-          {/* Saved Search Matches */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-800">Saved Search Matches</p>
-              <p className="text-gray-500 text-sm">
-                Receive alerts when new grants match your saved searches.
-              </p>
-            </div>
-
-            <input
-              type="checkbox"
-              checked={settings.savedSearchMatches}
-              onChange={() => toggle("savedSearchMatches")}
-              className="w-5 h-5 accent-brandBlue"
-            />
-          </div>
+            <span className="text-gray-800">System Updates</span>
+          </label>
         </div>
+      </div>
 
-        <CardFooter className="mt-6">
-          <Button fullWidth loading={saving} onClick={save}>
-            Save Notification Settings
-          </Button>
-        </CardFooter>
-      </Card>
+      {/* In-App Notifications */}
+      <div className="card">
+        <h2 className="section-title">In‑App Notifications</h2>
+
+        <div className="mt-6 space-y-4">
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.inappGrantMatches}
+              onChange={() => toggle("inappGrantMatches")}
+              className="w-5 h-5"
+            />
+            <span className="text-gray-800">Grant Match Alerts</span>
+          </label>
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.inappAutomations}
+              onChange={() => toggle("inappAutomations")}
+              className="w-5 h-5"
+            />
+            <span className="text-gray-800">Automation Run Alerts</span>
+          </label>
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.inappAIJobs}
+              onChange={() => toggle("inappAIJobs")}
+              className="w-5 h-5"
+            />
+            <span className="text-gray-800">AI Job Completion Alerts</span>
+          </label>
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.inappSystem}
+              onChange={() => toggle("inappSystem")}
+              className="w-5 h-5"
+            />
+            <span className="text-gray-800">System Messages</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <button
+        onClick={save}
+        disabled={saving}
+        className="btn btn-primary"
+      >
+        {saving ? "Saving…" : "Save Preferences"}
+      </button>
+
+      {/* Footer */}
+      <div className="mt-12 flex gap-4">
+        <Link href="/dashboard/notifications" className="btn btn-secondary">
+          Back to Notifications
+        </Link>
+
+        <Link href="/dashboard" className="btn btn-success">
+          Dashboard Home
+        </Link>
+      </div>
     </div>
   );
 }

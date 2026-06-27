@@ -1,63 +1,122 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import GrantCard from "@/components/GrantCard";
-import Card from "@/components/ui/Card";
+import Link from "next/link";
 
-export default function SavedGrantsPage() {
-  const [saved, setSaved] = useState<any[]>([]);
+export default function DashboardSavedGrantsPage() {
+  const [grants, setGrants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
+    const loadSaved = async () => {
       const res = await fetch("/api/saved-grants");
       const data = await res.json();
-      setSaved(data);
+      setGrants(data || []);
       setLoading(false);
-    }
-    load();
+    };
+
+    loadSaved();
   }, []);
 
-  async function removeSaved(id: string) {
-    await fetch(`/api/saved-grants/${id}`, { method: "DELETE" });
-    setSaved((prev) => prev.filter((g) => g.id !== id));
+  if (loading) {
+    return (
+      <div className="text-center text-muted text-lg py-20">
+        Loading saved grants…
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-brandBlue">Saved Grants</h1>
+    <div className="space-y-10">
 
-      {loading && (
-        <Card className="text-center py-10">
-          <p className="text-gray-600">Loading saved grants…</p>
-        </Card>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Saved Grants</h1>
+        <p className="text-muted mt-2">
+          View and manage grants you've saved for later review.
+        </p>
+      </div>
+
+      {/* Empty State */}
+      {grants.length === 0 && (
+        <div className="card text-center py-12">
+          <p className="text-muted text-lg">You haven’t saved any grants yet.</p>
+          <Link href="/dashboard/search" className="btn btn-primary mt-6">
+            Search Grants
+          </Link>
+        </div>
       )}
 
-      {!loading && saved.length === 0 && (
-        <Card className="text-center py-10">
-          <h2 className="text-lg font-semibold text-gray-700">
-            You have no saved grants yet
-          </h2>
-          <p className="text-gray-500 mt-2">
-            Save grants from the search results to view them here.
-          </p>
-        </Card>
-      )}
+      {/* Saved Grants List */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {grants.map((grant) => (
+          <div key={grant.id} className="card hover-card">
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {saved.map((item) => (
-          <GrantCard
-            key={item.id}
-            id={item.grantId}
-            title={item.grant.title}
-            summary={item.grant.summary}
-            amount={item.grant.amount}
-            deadline={item.grant.deadline}
-            category={item.grant.category}
-            onSave={() => removeSaved(item.id)}
-            saved={true}
-          />
+            {/* Title */}
+            <h2 className="text-lg font-semibold text-gray-900 leading-tight">
+              {grant.title}
+            </h2>
+
+            {/* Agency */}
+            {grant.agency && (
+              <p className="text-muted mt-1">{grant.agency}</p>
+            )}
+
+            {/* Metadata */}
+            <div className="mt-4 space-y-1 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold">Amount:</span>{" "}
+                {grant.amount || "N/A"}
+              </p>
+              <p>
+                <span className="font-semibold">Deadline:</span>{" "}
+                {grant.deadline || "N/A"}
+              </p>
+            </div>
+
+            {/* Summary */}
+            <p className="mt-4 text-gray-700 text-sm leading-relaxed line-clamp-4">
+              {grant.summary || "No summary available."}
+            </p>
+
+            {/* Buttons */}
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={`/dashboard/grants/${grant.id}`}
+                className="btn btn-success w-full text-center"
+              >
+                View Details
+              </Link>
+
+              <Link
+                href={`/dashboard/grants/${grant.id}/write`}
+                className="btn btn-primary w-full text-center"
+              >
+                Write with AI
+              </Link>
+
+              <button
+                onClick={async () => {
+                  await fetch(`/api/saved-grants/delete`, {
+                    method: "POST",
+                    body: JSON.stringify({ id: grant.id }),
+                  });
+                  setGrants((prev) => prev.filter((g) => g.id !== grant.id));
+                }}
+                className="btn btn-danger w-full"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         ))}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12">
+        <Link href="/dashboard" className="text-muted underline">
+          ← Back to Dashboard
+        </Link>
       </div>
     </div>
   );
